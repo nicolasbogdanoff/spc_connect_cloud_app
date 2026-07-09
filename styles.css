@@ -1,0 +1,25 @@
+:root {
+  --spc-border: #d9e2ea;
+}
+
+body {
+  background: #f6f8fb;
+}
+
+.card {
+  border: 1px solid var(--spc-border);
+  box-shadow: 0 2px 10px rgba(16, 24, 40, 0.05);
+}
+
+.bslib-sidebar-layout > .sidebar {
+  border-right: 1px solid var(--spc-border);
+}
+
+.value-box {
+  min-height: 118px;
+}
+
+pre.shiny-text-output {
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+}
