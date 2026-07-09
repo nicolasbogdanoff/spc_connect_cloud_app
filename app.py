@@ -308,89 +308,172 @@ def perform_analysis(
 def control_chart_figure(
     analysis: dict[str, Any], stage: str
 ) -> plt.Figure:
-    """Dibuja carta X̄-R inicial o revisada."""
+    """Dibuja la carta X̄-R inicial o revisada con trazabilidad explícita."""
     stats = analysis["stats"]
     limits = analysis[f"{stage}_limits"]
     excluded = analysis["excluded"] if stage == "revised" else []
 
-    x = np.arange(1, len(stats) + 1)
-    labels = stats["Subgrupo"].astype(str).tolist()
+    # Utilizar el identificador numérico real como coordenada X.
+    # Así, si un archivo tiene un subgrupo realmente ausente, queda un hueco real.
+    # En la carta revisada del ejemplo, el 18 sigue visible porque Minitab también
+    # lo mantiene como evidencia histórica, aunque no lo use para estimar límites.
+    x = stats["Subgrupo"].to_numpy(dtype=float)
 
-    fig, (ax_x, ax_r) = plt.subplots(2, 1, figsize=(12.5, 8.5), sharex=True)
+    fig, (ax_x, ax_r) = plt.subplots(
+        2, 1, figsize=(15.5, 9.8), sharex=True
+    )
 
     title = (
         "Carta X̄-R inicial — límites estimados con todos los subgrupos"
         if stage == "initial"
         else "Carta X̄-R revisada — excluidos del cálculo, pero visibles en la carta"
     )
-    fig.suptitle(title, fontsize=15, fontweight="bold")
+    fig.suptitle(title, fontsize=16, fontweight="bold", y=0.985)
 
-    # Carta X̄
-    ax_x.plot(x, stats["Media"], marker="o", linewidth=1.6, label="Media")
-    ax_x.axhline(limits["Xbar_UCL"], color="firebrick", linestyle="--", label=f'UCL = {limits["Xbar_UCL"]:.3f}')
-    ax_x.axhline(limits["Xbar_CL"], color="seagreen", label=f'CL = {limits["Xbar_CL"]:.3f}')
-    ax_x.axhline(limits["Xbar_LCL"], color="firebrick", linestyle="--", label=f'LCL = {limits["Xbar_LCL"]:.3f}')
+    # En la carta revisada se sombrea la posición de cada subgrupo excluido.
+    if stage == "revised":
+        for sg in excluded:
+            for ax in (ax_x, ax_r):
+                ax.axvspan(sg - 0.45, sg + 0.45, color="gold", alpha=0.14, zorder=0)
+
+    # --------------------------------------------------------
+    # CARTA X̄
+    # --------------------------------------------------------
+    ax_x.plot(
+        x, stats["Media"], marker="o", linewidth=1.7, markersize=6, label="Media"
+    )
+    ax_x.axhline(
+        limits["Xbar_UCL"], color="firebrick", linestyle="--", linewidth=1.6,
+        label=f'UCL = {limits["Xbar_UCL"]:.3f}'
+    )
+    ax_x.axhline(
+        limits["Xbar_CL"], color="seagreen", linewidth=1.6,
+        label=f'CL = {limits["Xbar_CL"]:.3f}'
+    )
+    ax_x.axhline(
+        limits["Xbar_LCL"], color="firebrick", linestyle="--", linewidth=1.6,
+        label=f'LCL = {limits["Xbar_LCL"]:.3f}'
+    )
 
     x_fail = failures(stats, "Media", limits["Xbar_LCL"], limits["Xbar_UCL"])
     fail_mask = stats["Subgrupo"].isin(x_fail)
     if fail_mask.any():
-        ax_x.scatter(x[fail_mask], stats.loc[fail_mask, "Media"], color="crimson", marker="X", s=130, zorder=5, label="Prueba 1")
-        for pos, (_, row) in zip(x[fail_mask], stats.loc[fail_mask].iterrows()):
+        ax_x.scatter(
+            stats.loc[fail_mask, "Subgrupo"],
+            stats.loc[fail_mask, "Media"],
+            color="crimson", marker="X", s=150, zorder=6,
+            label="Prueba 1: fuera de control"
+        )
+        for _, row in stats.loc[fail_mask].iterrows():
             sg = int(row["Subgrupo"])
-            suffix = "\nExcluido del cálculo" if sg in excluded else ""
+            suffix = "\nVisible, pero excluido del cálculo" if sg in excluded else ""
             ax_x.annotate(
                 f"Subgrupo {sg}{suffix}",
-                xy=(pos, row["Media"]),
-                xytext=(-75, -50),
+                xy=(sg, row["Media"]),
+                xytext=(-105, -58),
                 textcoords="offset points",
-                arrowprops={"arrowstyle": "->"},
-                fontsize=8.5,
-                fontweight="bold",
+                arrowprops={"arrowstyle": "->", "lw": 1.1},
+                fontsize=9, fontweight="bold",
+                bbox={"boxstyle": "round,pad=0.25", "facecolor": "white", "alpha": 0.9},
             )
 
-    # Marcar excluidos que no estén fuera de límites
-    for sg in excluded:
-        row_idx = stats.index[stats["Subgrupo"] == sg]
-        if len(row_idx) == 0 or sg in x_fail:
-            continue
-        idx = row_idx[0]
-        ax_x.scatter(x[idx], stats.loc[idx, "Media"], facecolors="none", edgecolors="darkorange", s=120, linewidths=2, zorder=5)
+    # Anillo naranja: el punto se muestra, pero no intervino en los límites revisados.
+    if stage == "revised" and excluded:
+        excluded_mask = stats["Subgrupo"].isin(excluded)
+        ax_x.scatter(
+            stats.loc[excluded_mask, "Subgrupo"],
+            stats.loc[excluded_mask, "Media"],
+            facecolors="none", edgecolors="darkorange",
+            s=220, linewidths=2.4, zorder=7,
+            label="Visible, excluido de la estimación"
+        )
 
     ax_x.set_ylabel("Media del subgrupo")
-    ax_x.set_title("Carta X̄")
+    ax_x.set_title("Carta X̄", pad=12, fontsize=12, fontweight="bold")
     ax_x.grid(alpha=0.22)
-    ax_x.legend(loc="best", fontsize=8)
+    ax_x.legend(
+        loc="upper left", bbox_to_anchor=(1.01, 1.0),
+        borderaxespad=0, fontsize=8.5, frameon=True
+    )
 
-    # Carta R
-    ax_r.plot(x, stats["Rango"], marker="o", linewidth=1.6, label="Rango")
-    ax_r.axhline(limits["R_UCL"], color="firebrick", linestyle="--", label=f'UCL = {limits["R_UCL"]:.3f}')
-    ax_r.axhline(limits["R_CL"], color="seagreen", label=f'CL = {limits["R_CL"]:.3f}')
-    ax_r.axhline(limits["R_LCL"], color="firebrick", linestyle="--", label=f'LCL = {limits["R_LCL"]:.3f}')
+    # --------------------------------------------------------
+    # CARTA R
+    # --------------------------------------------------------
+    ax_r.plot(
+        x, stats["Rango"], marker="o", linewidth=1.7, markersize=6, label="Rango"
+    )
+    ax_r.axhline(
+        limits["R_UCL"], color="firebrick", linestyle="--", linewidth=1.6,
+        label=f'UCL = {limits["R_UCL"]:.3f}'
+    )
+    ax_r.axhline(
+        limits["R_CL"], color="seagreen", linewidth=1.6,
+        label=f'CL = {limits["R_CL"]:.3f}'
+    )
+    ax_r.axhline(
+        limits["R_LCL"], color="firebrick", linestyle="--", linewidth=1.6,
+        label=f'LCL = {limits["R_LCL"]:.3f}'
+    )
 
     r_fail = failures(stats, "Rango", limits["R_LCL"], limits["R_UCL"])
     r_mask = stats["Subgrupo"].isin(r_fail)
     if r_mask.any():
-        ax_r.scatter(x[r_mask], stats.loc[r_mask, "Rango"], color="crimson", marker="X", s=130, zorder=5, label="Prueba 1")
+        ax_r.scatter(
+            stats.loc[r_mask, "Subgrupo"],
+            stats.loc[r_mask, "Rango"],
+            color="crimson", marker="X", s=150, zorder=6,
+            label="Prueba 1: fuera de control"
+        )
 
-    for sg in excluded:
-        row_idx = stats.index[stats["Subgrupo"] == sg]
-        if len(row_idx) == 0:
-            continue
-        idx = row_idx[0]
-        ax_r.scatter(x[idx], stats.loc[idx, "Rango"], facecolors="none", edgecolors="darkorange", s=120, linewidths=2, zorder=5)
+    if stage == "revised" and excluded:
+        excluded_mask = stats["Subgrupo"].isin(excluded)
+        ax_r.scatter(
+            stats.loc[excluded_mask, "Subgrupo"],
+            stats.loc[excluded_mask, "Rango"],
+            facecolors="none", edgecolors="darkorange",
+            s=220, linewidths=2.4, zorder=7,
+            label="Visible, excluido de la estimación"
+        )
 
     ax_r.set_ylabel("Rango")
     ax_r.set_xlabel("Subgrupo")
-    ax_r.set_title("Carta R")
-    ax_r.set_xticks(x)
-    ax_r.set_xticklabels(labels)
-    ax_r.set_xlim(0.5, len(stats) + 0.5)
+    ax_r.set_title("Carta R", pad=12, fontsize=12, fontweight="bold")
+
+    # Mostrar todas las divisiones cuando hay hasta 30 subgrupos.
+    subgroup_ticks = stats["Subgrupo"].astype(int).tolist()
+    if len(subgroup_ticks) <= 30:
+        ax_r.set_xticks(subgroup_ticks)
+        ax_r.set_xticklabels([str(v) for v in subgroup_ticks], rotation=0)
+    else:
+        step = max(1, len(subgroup_ticks) // 20)
+        selected_ticks = subgroup_ticks[::step]
+        if subgroup_ticks[-1] not in selected_ticks:
+            selected_ticks.append(subgroup_ticks[-1])
+        ax_r.set_xticks(selected_ticks)
+        ax_r.set_xticklabels([str(v) for v in selected_ticks])
+
+    x_min = min(subgroup_ticks) - 0.6
+    x_max = max(subgroup_ticks) + 0.6
+    ax_r.set_xlim(x_min, x_max)
     ax_r.grid(alpha=0.22)
-    ax_r.legend(loc="best", fontsize=8)
+    ax_r.legend(
+        loc="upper left", bbox_to_anchor=(1.01, 1.0),
+        borderaxespad=0, fontsize=8.5, frameon=True
+    )
 
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    if stage == "revised":
+        excluded_text = ", ".join(str(v) for v in excluded) if excluded else "ninguno"
+        note = (
+            f"Límites calculados con {len(analysis['estimation'])} de {len(stats)} subgrupos. "
+            f"Excluidos de la estimación: {excluded_text}. "
+            "Los puntos excluidos permanecen visibles como evidencia histórica."
+        )
+    else:
+        note = f"Límites iniciales calculados con los {len(stats)} subgrupos."
+
+    fig.text(0.5, 0.025, note, ha="center", va="bottom", fontsize=9.5)
+    fig.subplots_adjust(left=0.08, right=0.78, top=0.90, bottom=0.12, hspace=0.42)
     return fig
-
 
 def capability_figure(analysis: dict[str, Any]) -> plt.Figure:
     values = analysis["values"]
@@ -494,12 +577,12 @@ app_ui = ui.page_sidebar(
             "Cartas de control",
             ui.card(
                 ui.card_header("Carta inicial"),
-                ui.output_plot("initial_chart", height="720px"),
+                ui.output_plot("initial_chart", height="820px"),
                 full_screen=True,
             ),
             ui.card(
-                ui.card_header("Carta revisada: punto excluido visible"),
-                ui.output_plot("revised_chart", height="720px"),
+                ui.card_header("Carta revisada: excluidos sombreados y visibles"),
+                ui.output_plot("revised_chart", height="820px"),
                 full_screen=True,
             ),
         ),
@@ -540,6 +623,8 @@ app_ui = ui.page_sidebar(
 3. La **carta revisada** vuelve a mostrar todos los puntos, incluidos los excluidos.
 4. Los límites revisados se calculan únicamente con los subgrupos aceptados.
 5. Por eso el punto 18 puede seguir visible y fuera de control, aunque no intervenga en los nuevos límites.
+6. En la carta revisada, una **franja amarilla** y un **anillo naranja** identifican los subgrupos excluidos de la estimación.
+7. El pie de la figura informa cuántos subgrupos se utilizaron para calcular los límites.
 
 ### Formato del archivo
 
@@ -588,7 +673,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.text
     def status_value():
         a = analysis()
-        return "Estable" if a["stable_revised"] else "Revisar señales"
+        if not a["stable_revised"]:
+            return "Revisar señales"
+        if a["excluded"]:
+            excluded_text = ", ".join(str(v) for v in a["excluded"])
+            return f"Estable tras excluir {excluded_text}"
+        return "Estable"
 
     @render.text
     def mean_value():
