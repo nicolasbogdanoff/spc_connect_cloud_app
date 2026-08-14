@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "SPC Connect: X-bar-R Control Charts and Process Capability"
+type: software
+authors:
+  - family-names: Bogdanoff
+    given-names: Nicolás Mauricio
+    orcid: https://orcid.org/0009-0004-6275-3013
+abstract: >
+  A Shiny for Python application for exploratory statistical process control,
+  X-bar-R control charts, revised control limits, and process-capability analysis.
+keywords:
+  - statistical process control
+  - control charts
+  - process capability
+  - quality engineering
+  - Shiny for Python
+  - engineering education
+repository-code: https://github.com/nicolasbogdanoff/spc_connect_cloud_app
+url: https://github.com/nicolasbogdanoff/spc_connect_cloud_app
