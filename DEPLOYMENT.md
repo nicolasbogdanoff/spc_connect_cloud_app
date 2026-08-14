@@ -1,111 +1,92 @@
-# Publicación en Posit Connect Cloud
+# Deployment
 
-La aplicación está construida con **Shiny para Python**. Para publicarla, Posit Connect Cloud necesita que `app.py`, `requirements.txt` y los archivos auxiliares estén en un repositorio de GitHub.
+This application is built with Shiny for Python and is structured for deployment from the repository root.
 
-## 1. Probarla localmente (recomendado)
+## Local validation
 
-Abra una terminal dentro de la carpeta del proyecto:
+Create a virtual environment and install the pinned dependency ranges:
 
-```bash
-python3 -m venv .venv
+~~~bash
+python -m venv .venv
+
+# macOS/Linux
 source .venv/bin/activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 shiny run --reload app.py
-```
+~~~
 
-En Windows, la activación es:
+Open the local address reported by the terminal, usually http://127.0.0.1:8000.
 
-```powershell
-.venv\Scripts\activate
-```
+Before publishing, confirm that:
 
-La terminal mostrará una dirección local, normalmente:
+- the sample dataset loads;
+- both initial and revised X̄-R charts render;
+- CSV and Excel upload paths behave as expected;
+- capability results are produced for valid specification limits;
+- the Excel download contains the expected result sheets.
 
-```text
-http://127.0.0.1:8000
-```
+## Posit Connect Cloud
 
-## 2. Crear el repositorio de GitHub
+The repository contains the files required by the Shiny for Python deployment:
 
-Cree un repositorio nuevo. Para la modalidad gratuita, lo más sencillo es utilizar un repositorio público.
+- app.py
+- requirements.txt
+- sample_data.csv
+- styles.css
+- README.md
+- DEPLOYMENT.md
+- CITATION.cff
 
-Suba a la **raíz** del repositorio estos archivos:
+A typical publication flow is:
 
-```text
-app.py
-requirements.txt
-sample_data.csv
-styles.css
-README.md
-DEPLOYMENT.md
-.gitignore
-```
+1. Sign in to Posit Connect Cloud.
+2. Choose Publish and connect the GitHub account when prompted.
+3. Select nicolasbogdanoff/spc_connect_cloud_app.
+4. Select the main branch.
+5. Choose Shiny for Python as the framework.
+6. Set app.py as the application entry point.
+7. Publish and wait for dependency installation to complete.
 
-### Mediante la web de GitHub
+The deployment should keep the repository root as the working directory because app.py loads sample_data.csv and styles.css from its own directory.
 
-1. Abra el repositorio.
-2. Seleccione **Add file → Upload files**.
-3. Arrastre todos los archivos anteriores.
-4. Confirme con **Commit changes**.
+## Updating a deployment
 
-### Mediante Git
+After changing the application or documentation:
 
-```bash
-git init
+~~~bash
 git add .
-git commit -m "Aplicación SPC Xbar-R"
-git branch -M main
-git remote add origin URL_DE_SU_REPOSITORIO
-git push -u origin main
-```
-
-## 3. Conectar GitHub con Posit Connect Cloud
-
-1. Ingrese a Posit Connect Cloud.
-2. Pulse **Publish**, en la esquina superior derecha.
-3. La primera vez, autorice la instalación de la aplicación de GitHub de Posit.
-4. Conceda acceso al repositorio de la aplicación.
-5. Seleccione **Shiny for Python** como framework.
-6. Seleccione el repositorio y la rama `main`.
-7. Cuando solicite el archivo principal, elija `app.py`.
-8. Confirme la publicación.
-
-Connect Cloud leerá `requirements.txt`, instalará las dependencias y ejecutará la aplicación.
-
-## 4. Actualizar la aplicación
-
-Edite los archivos, confirme los cambios y vuelva a enviarlos a GitHub:
-
-```bash
-git add .
-git commit -m "Actualización de la aplicación"
+git commit -m "Describe the change"
 git push
-```
+~~~
 
-Luego vuelva a publicar desde Connect Cloud o active la publicación automática asociada a la rama del repositorio.
+Republish from Posit Connect Cloud or use the repository integration if automatic deployment is enabled.
 
-## 5. Errores frecuentes
+## Troubleshooting
 
-### La construcción falla al instalar paquetes
+### Dependency installation fails
 
-Compruebe que cada dependencia esté en una línea separada de `requirements.txt`. No agregue instrucciones `pip install` dentro de `app.py`.
+Check that requirements.txt is present at the repository root and that each dependency appears on its own line.
 
-### No encuentra `sample_data.csv` o `styles.css`
+### The sample data or stylesheet is missing
 
-Los archivos deben estar en la misma carpeta que `app.py` y conservar exactamente sus nombres.
+Keep sample_data.csv and styles.css beside app.py. The application resolves both files relative to its own directory.
 
-### La aplicación abre, pero el archivo Excel no funciona
+### Excel export fails
 
-Confirme que `openpyxl` permanezca en `requirements.txt`.
+Confirm that openpyxl is installed from requirements.txt.
 
-### El gráfico no coincide con Minitab
+### The chart does not match the reference analysis
 
-Para el ejemplo 6.34:
+For the included sample data, use:
 
-- modo de exclusión: **Manual**;
-- subgrupos excluidos: `18`;
-- LSL: `420`;
-- objetivo: `450`;
-- USL: `480`.
+- exclusion mode: Manual;
+- excluded subgroup: 18;
+- LSL: 420;
+- target: 450;
+- USL: 480.
 
-La carta revisada debe conservar el punto 18 visible, aunque no participe en el cálculo de los límites.
+The revised chart intentionally keeps subgroup 18 visible while excluding it from revised-limit estimation. This preserves traceability and should not be interpreted as permission to remove an observation without an assignable cause.
