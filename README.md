@@ -4,6 +4,8 @@ A Shiny for Python application for exploratory statistical process control (SPC)
 
 The project is designed for engineering education, process analysis, and transparent experimentation with subgrouped measurements. It keeps the full analytical trace visible: observations excluded from revised limit estimation remain displayed on the revised charts.
 
+[![Tests](https://github.com/nicolasbogdanoff/spc_connect_cloud_app/actions/workflows/tests.yml/badge.svg)](https://github.com/nicolasbogdanoff/spc_connect_cloud_app/actions/workflows/tests.yml)
+
 ## What it does
 
 - Builds X̄-R charts for subgroup sizes from 2 to 10 measurements.
@@ -100,6 +102,15 @@ The revised chart uses shading and an orange outline to distinguish subgroups ex
 | DEPLOYMENT.md | Posit Connect Cloud deployment notes |
 | CITATION.cff | Citation metadata for scholarly or technical reuse |
 | LICENSE | MIT license |
+
+## Testing
+
+The repository includes regression tests for sample-data normalization, manual exclusion traceability, capability calculations, and specification-limit validation. Run them locally with:
+
+~~~bash
+pip install -r requirements.txt pytest
+pytest -q
+~~~
 
 ## Deployment
 
