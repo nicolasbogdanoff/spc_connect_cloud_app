@@ -49,7 +49,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Windows PowerShell
-.venv\Scripts\Activate.ps1
+.venv\\Scripts\\Activate.ps1
 
 pip install -r requirements.txt
 shiny run --reload app.py
@@ -99,6 +99,7 @@ The revised chart uses shading and an orange outline to distinguish subgroups ex
 | requirements.txt | Runtime dependencies |
 | DEPLOYMENT.md | Posit Connect Cloud deployment notes |
 | CITATION.cff | Citation metadata for scholarly or technical reuse |
+| LICENSE | MIT license |
 
 ## Deployment
 
@@ -118,8 +119,8 @@ Engineering education and research interests spanning scientific computing, stat
 
 ## Citation
 
-If this software contributes to a technical report, class activity, research note, or publication, use the metadata in CITATION.cff.
+If this software contributes to a technical report, class activity, research note, or publication, cite it using [CITATION.cff](CITATION.cff).
 
 ## License
 
-No open-source license is declared in this repository yet. Until a license is added, reuse and redistribution remain subject to the rights reserved by the author.
+This project is released under the [MIT License](LICENSE).
