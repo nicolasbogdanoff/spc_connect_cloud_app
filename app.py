@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -305,6 +306,37 @@ def perform_analysis(
     }
 
 
+def build_audit_summary(analysis: dict[str, Any]) -> dict[str, Any]:
+    """Return a JSON-safe summary of the analytical decisions and results."""
+    return {
+        "method": "Xbar-R",
+        "measurements_per_subgroup": int(analysis["n"]),
+        "subgroups_total": int(len(analysis["stats"])),
+        "subgroups_used_for_revised_limits": int(len(analysis["estimation"])),
+        "excluded_subgroups": [int(value) for value in analysis["excluded"]],
+        "signals": {
+            "initial_xbar": [int(value) for value in analysis["initial_x_fail"]],
+            "initial_range": [int(value) for value in analysis["initial_r_fail"]],
+            "revised_xbar": [int(value) for value in analysis["revised_x_fail_all"]],
+            "revised_range": [int(value) for value in analysis["revised_r_fail_all"]],
+        },
+        "specifications": {
+            "lsl": float(analysis["lsl"]),
+            "target": float(analysis["target"]),
+            "usl": float(analysis["usl"]),
+        },
+        "capability": {
+            "cp": float(analysis["cp"]),
+            "cpk": float(analysis["cpk"]),
+            "pp": float(analysis["pp"]),
+            "ppk": float(analysis["ppk"]),
+            "sigma_within": float(analysis["sigma_within"]),
+            "sigma_overall": float(analysis["sigma_overall"]),
+        },
+        "stable_revised": bool(analysis["stable_revised"]),
+    }
+
+
 def control_chart_figure(
     analysis: dict[str, Any], stage: str
 ) -> plt.Figure:
@@ -559,6 +591,7 @@ app_ui = ui.page_sidebar(
         ui.input_numeric("usl", "USL", 480),
         ui.hr(),
         ui.download_button("download_results", "Descargar resultados Excel", width="100%"),
+        ui.download_button("download_audit", "Descargar auditoría JSON", width="100%"),
         ui.download_button("download_sample", "Descargar datos de ejemplo", width="100%"),
         width=330,
         open="desktop",
@@ -754,6 +787,15 @@ def server(input: Inputs, output: Outputs, session: Session):
             a["limits_table"].to_excel(writer, sheet_name="Limites", index=False)
             a["capability_table"].to_excel(writer, sheet_name="Capacidad", index=False)
         yield buffer.getvalue()
+
+    @render.download(filename="resumen_auditoria.json", media_type="application/json")
+    def download_audit():
+        payload = json.dumps(
+            build_audit_summary(analysis()),
+            ensure_ascii=False,
+            indent=2,
+        )
+        yield payload.encode("utf-8")
 
     @render.download(filename="datos_ejemplo_6_34.csv", media_type="text/csv")
     def download_sample():

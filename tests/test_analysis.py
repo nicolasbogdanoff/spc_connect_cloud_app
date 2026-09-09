@@ -3,7 +3,9 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from app import normalize_data, perform_analysis
+import json
+
+from app import build_audit_summary, normalize_data, perform_analysis
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -53,3 +55,25 @@ def test_invalid_specification_order_is_rejected() -> None:
             target=450.0,
             usl=420.0,
         )
+
+
+def test_audit_summary_is_json_safe_and_preserves_traceability() -> None:
+    normalized, measurement_columns = normalize_data(sample_frame())
+    analysis = perform_analysis(
+        normalized,
+        measurement_columns,
+        exclusion_mode="manual",
+        manual_excluded="18",
+        lsl=420.0,
+        target=450.0,
+        usl=480.0,
+    )
+
+    summary = build_audit_summary(analysis)
+    json.dumps(summary)
+
+    assert summary["method"] == "Xbar-R"
+    assert summary["subgroups_total"] == 20
+    assert summary["subgroups_used_for_revised_limits"] == 19
+    assert summary["excluded_subgroups"] == [18]
+    assert summary["specifications"] == {"lsl": 420.0, "target": 450.0, "usl": 480.0}

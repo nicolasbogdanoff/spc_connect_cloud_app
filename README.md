@@ -17,6 +17,7 @@ The project is designed for engineering education, process analysis, and transpa
 - Calculates Cp, Cpk, Pp, Ppk, CPL, CPU, PPL, PPU, and an estimated within-process PPM.
 - Imports CSV, XLSX, and XLS files.
 - Exports subgroup statistics, control limits, and capability results to Excel.
+- Exports a JSON audit summary with specifications, exclusions, signals, limits context, and capability metrics.
 - Includes a reproducible sample dataset based on the project’s reference SPC exercise.
 
 ## Methodology
