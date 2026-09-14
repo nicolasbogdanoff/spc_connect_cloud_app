@@ -14,6 +14,7 @@ The project is designed for engineering education, process analysis, and transpa
 - Provides an automatic diagnostic mode that flags initial out-of-limit subgroups for review.
 - Recalculates revised limits without silently removing excluded observations from the charts.
 - Reports initial and revised signals for both the X̄ and R charts.
+- Flags eight-point runs on one side of the X̄ center line for additional review.
 - Calculates Cp, Cpk, Pp, Ppk, CPL, CPU, PPL, PPU, and an estimated within-process PPM.
 - Imports CSV, XLSX, and XLS files.
 - Exports subgroup statistics, control limits, and capability results to Excel.
@@ -31,6 +32,8 @@ The application follows this workflow:
 5. Re-estimate revised limits from the retained subgroups.
 6. Keep every subgroup visible in the revised charts so the analytical history remains auditable.
 7. Estimate process capability from the retained measurements.
+
+In addition to points outside the control limits, the analysis reports a simple run signal when eight consecutive subgroup means remain on one side of the X̄ center line. This is a review prompt, not an automatic diagnosis or an instruction to remove data.
 
 For within-subgroup variation, the application estimates sigma as R̄/d2. Overall variation is calculated from the retained observations using the sample standard deviation. Capability and expected PPM values assume a normal approximation and should be interpreted together with process knowledge and engineering judgment.
 

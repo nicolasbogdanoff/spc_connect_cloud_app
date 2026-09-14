@@ -150,6 +150,36 @@ def failures(stats: pd.DataFrame, variable: str, lcl: float, ucl: float) -> list
     return stats.loc[mask, "Subgrupo"].astype(int).tolist()
 
 
+def side_run_signals(
+    stats: pd.DataFrame,
+    variable: str,
+    center: float,
+    run_length: int = 8,
+) -> list[int]:
+    """Return subgroup IDs belonging to runs on one side of the center line."""
+    if run_length < 2:
+        raise ValueError("run_length must be at least 2")
+
+    signals: set[int] = set()
+    direction = 0
+    run: list[int] = []
+    for subgroup, value in zip(stats["Subgrupo"], stats[variable]):
+        current = 1 if value > center else -1 if value < center else 0
+        if current == 0:
+            direction = 0
+            run = []
+        elif current == direction:
+            run.append(int(subgroup))
+        else:
+            direction = current
+            run = [int(subgroup)]
+
+        if len(run) >= run_length:
+            signals.update(run)
+
+    return sorted(signals)
+
+
 def perform_analysis(
     raw_df: pd.DataFrame,
     measurement_cols: list[str],
@@ -169,6 +199,7 @@ def perform_analysis(
     initial_r_fail = failures(
         stats, "Rango", initial_limits["R_LCL"], initial_limits["R_UCL"]
     )
+    initial_x_run = side_run_signals(stats, "Media", initial_limits["Xbar_CL"])
 
     if exclusion_mode == "auto":
         excluded = sorted(set(initial_x_fail + initial_r_fail))
@@ -184,9 +215,11 @@ def perform_analysis(
     revised_r_fail_all = failures(
         stats, "Rango", revised_limits["R_LCL"], revised_limits["R_UCL"]
     )
+    revised_x_run_all = side_run_signals(stats, "Media", revised_limits["Xbar_CL"])
 
     revised_x_additional = [x for x in revised_x_fail_all if x not in excluded]
     revised_r_additional = [x for x in revised_r_fail_all if x not in excluded]
+    revised_x_run_additional = [x for x in revised_x_run_all if x not in excluded]
 
     if not (lsl < target < usl):
         raise ValueError("Debe cumplirse LSL < objetivo < USL.")
@@ -272,7 +305,7 @@ def perform_analysis(
         }
     )
 
-    stable_revised = not revised_x_additional and not revised_r_additional
+    stable_revised = not revised_x_additional and not revised_r_additional and not revised_x_run_additional
 
     return {
         "stats": stats,
@@ -285,10 +318,13 @@ def perform_analysis(
         "revised_limits": revised_limits,
         "initial_x_fail": initial_x_fail,
         "initial_r_fail": initial_r_fail,
+        "initial_x_run": initial_x_run,
         "revised_x_fail_all": revised_x_fail_all,
         "revised_r_fail_all": revised_r_fail_all,
+        "revised_x_run_all": revised_x_run_all,
         "revised_x_additional": revised_x_additional,
         "revised_r_additional": revised_r_additional,
+        "revised_x_run_additional": revised_x_run_additional,
         "stable_revised": stable_revised,
         "mean": mean_process,
         "sigma_within": sigma_within,
@@ -317,8 +353,10 @@ def build_audit_summary(analysis: dict[str, Any]) -> dict[str, Any]:
         "signals": {
             "initial_xbar": [int(value) for value in analysis["initial_x_fail"]],
             "initial_range": [int(value) for value in analysis["initial_r_fail"]],
+            "initial_xbar_run": [int(value) for value in analysis["initial_x_run"]],
             "revised_xbar": [int(value) for value in analysis["revised_x_fail_all"]],
             "revised_range": [int(value) for value in analysis["revised_r_fail_all"]],
+            "revised_xbar_run": [int(value) for value in analysis["revised_x_run_all"]],
         },
         "specifications": {
             "lsl": float(analysis["lsl"]),
@@ -771,11 +809,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         return (
             f"Carta inicial X̄ — prueba 1: {a['initial_x_fail'] or 'ninguno'}\n"
             f"Carta inicial R  — prueba 1: {a['initial_r_fail'] or 'ninguno'}\n\n"
+            f"Carta inicial X̄ — corrida de 8 en un lado: {a['initial_x_run'] or 'ninguna'}\n\n"
             f"Subgrupos excluidos de la estimación revisada: {excluded}\n"
             f"Carta revisada X̄ — todos los puntos visibles fuera de límite: {a['revised_x_fail_all'] or 'ninguno'}\n"
             f"Carta revisada R  — todos los puntos visibles fuera de límite: {a['revised_r_fail_all'] or 'ninguno'}\n\n"
             f"Señales adicionales no excluidas en X̄: {a['revised_x_additional'] or 'ninguna'}\n"
-            f"Señales adicionales no excluidas en R: {a['revised_r_additional'] or 'ninguna'}"
+            f"Señales adicionales no excluidas en R: {a['revised_r_additional'] or 'ninguna'}\n"
+            f"Corridas adicionales no excluidas en X̄: {a['revised_x_run_additional'] or 'ninguna'}"
         )
 
     @render.download(filename="resultados_spc.xlsx")

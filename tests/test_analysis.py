@@ -5,7 +5,7 @@ import pytest
 
 import json
 
-from app import build_audit_summary, normalize_data, perform_analysis
+from app import build_audit_summary, normalize_data, perform_analysis, side_run_signals
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -77,3 +77,15 @@ def test_audit_summary_is_json_safe_and_preserves_traceability() -> None:
     assert summary["subgroups_used_for_revised_limits"] == 19
     assert summary["excluded_subgroups"] == [18]
     assert summary["specifications"] == {"lsl": 420.0, "target": 450.0, "usl": 480.0}
+
+
+def test_side_run_signals_identifies_the_complete_run() -> None:
+    stats = pd.DataFrame(
+        {"Subgrupo": [1, 2, 3, 4, 5, 6], "Media": [10.0, 11.0, 12.0, 13.0, 14.0, 9.0]}
+    )
+    assert side_run_signals(stats, "Media", center=10.0, run_length=4) == [2, 3, 4, 5]
+
+
+def test_side_run_signals_rejects_a_single_point_rule() -> None:
+    with pytest.raises(ValueError, match="at least 2"):
+        side_run_signals(pd.DataFrame({"Subgrupo": [1], "Media": [1.0]}), "Media", 0, 1)
