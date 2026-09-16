@@ -1,0 +1,19 @@
+name: Propuesta de mejora
+description: Propón una mejora alineada con el alcance estadístico y educativo.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: ¿Qué decisión de análisis o mantenimiento ayudaría a resolver?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Describe el comportamiento esperado y sus limitaciones.
+    validations:
+      required: true

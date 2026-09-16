@@ -5,6 +5,7 @@ A Shiny for Python application for exploratory statistical process control (SPC)
 The project is designed for engineering education, process analysis, and transparent experimentation with subgrouped measurements. It keeps the full analytical trace visible: observations excluded from revised limit estimation remain displayed on the revised charts.
 
 [![Tests](https://github.com/nicolasbogdanoff/spc_connect_cloud_app/actions/workflows/tests.yml/badge.svg)](https://github.com/nicolasbogdanoff/spc_connect_cloud_app/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/nicolasbogdanoff/spc_connect_cloud_app)](https://github.com/nicolasbogdanoff/spc_connect_cloud_app/releases)
 
 ## What it does
 
@@ -115,6 +116,10 @@ The repository includes regression tests for sample-data normalization, manual e
 pip install -r requirements.txt pytest
 pytest -q
 ~~~
+
+## Maintainer workflow
+
+The project includes [contribution guidance](CONTRIBUTING.md), a [security policy](SECURITY.md), and issue/PR templates. These keep analytical changes reviewable and help contributors avoid sharing real process data or credentials.
 
 ## Deployment
 

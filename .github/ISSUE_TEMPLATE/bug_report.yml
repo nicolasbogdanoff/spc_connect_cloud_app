@@ -1,0 +1,28 @@
+name: Reporte de error
+description: Reporta un fallo reproducible sin incluir datos confidenciales.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "No incluyas datos de procesos reales, credenciales ni archivos privados."
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Cómo reproducirlo
+      description: Indica entradas sintéticas, pasos y resultado observado.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Entorno
+      description: Versión de Python y sistema operativo.
+    validations:
+      required: true
