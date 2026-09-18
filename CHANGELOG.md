@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — 2026-09-18
+
+- Versioned the JSON audit summary with application metadata, measurement columns, observation counts, exclusion mode, and initial/revised control limits.
+- Added regression coverage for non-finite specifications and zero-variability datasets.
+- Capability analysis now rejects non-finite specifications and retained datasets without positive variation with explicit user-facing errors.
+
 ## 0.2.0 — 2026-09-16
 
 - Added a JSON audit export for specifications, exclusions, signals, and capability metrics.

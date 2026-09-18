@@ -189,6 +189,12 @@ def perform_analysis(
     target: float,
     usl: float,
 ) -> dict[str, Any]:
+    specifications = np.asarray([lsl, target, usl], dtype=float)
+    if not np.isfinite(specifications).all():
+        raise ValueError("LSL, objetivo y USL deben ser valores finitos.")
+    if not (lsl < target < usl):
+        raise ValueError("Debe cumplirse LSL < objetivo < USL.")
+
     stats = calculate_subgroup_stats(raw_df, measurement_cols)
     n = len(measurement_cols)
 
@@ -221,13 +227,15 @@ def perform_analysis(
     revised_r_additional = [x for x in revised_r_fail_all if x not in excluded]
     revised_x_run_additional = [x for x in revised_x_run_all if x not in excluded]
 
-    if not (lsl < target < usl):
-        raise ValueError("Debe cumplirse LSL < objetivo < USL.")
-
     values = estimation[measurement_cols].to_numpy(dtype=float).ravel()
     sigma_overall = float(values.std(ddof=1))
     mean_process = revised_limits["Media_proceso"]
     sigma_within = revised_limits["Sigma_within"]
+
+    if sigma_within <= 0 or sigma_overall <= 0:
+        raise ValueError(
+            "Las mediciones retenidas deben tener variabilidad positiva para calcular capacidad."
+        )
 
     cp = (usl - lsl) / (6 * sigma_within)
     cpl = (mean_process - lsl) / (3 * sigma_within)
@@ -313,6 +321,7 @@ def perform_analysis(
         "values": values,
         "measurement_cols": measurement_cols,
         "n": n,
+        "exclusion_mode": exclusion_mode,
         "excluded": excluded,
         "initial_limits": initial_limits,
         "revised_limits": revised_limits,
@@ -345,10 +354,15 @@ def perform_analysis(
 def build_audit_summary(analysis: dict[str, Any]) -> dict[str, Any]:
     """Return a JSON-safe summary of the analytical decisions and results."""
     return {
+        "schema_version": 1,
+        "application": "SPC Connect",
         "method": "Xbar-R",
+        "exclusion_mode": str(analysis["exclusion_mode"]),
         "measurements_per_subgroup": int(analysis["n"]),
+        "measurement_columns": list(analysis["measurement_cols"]),
         "subgroups_total": int(len(analysis["stats"])),
         "subgroups_used_for_revised_limits": int(len(analysis["estimation"])),
+        "observations_used": int(len(analysis["values"])),
         "excluded_subgroups": [int(value) for value in analysis["excluded"]],
         "signals": {
             "initial_xbar": [int(value) for value in analysis["initial_x_fail"]],
@@ -362,6 +376,14 @@ def build_audit_summary(analysis: dict[str, Any]) -> dict[str, Any]:
             "lsl": float(analysis["lsl"]),
             "target": float(analysis["target"]),
             "usl": float(analysis["usl"]),
+        },
+        "limits": {
+            "initial": {
+                key: float(value) for key, value in analysis["initial_limits"].items()
+            },
+            "revised": {
+                key: float(value) for key, value in analysis["revised_limits"].items()
+            },
         },
         "capability": {
             "cp": float(analysis["cp"]),

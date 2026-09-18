@@ -20,6 +20,7 @@ The project is designed for engineering education, process analysis, and transpa
 - Imports CSV, XLSX, and XLS files.
 - Exports subgroup statistics, control limits, and capability results to Excel.
 - Exports a JSON audit summary with specifications, exclusions, signals, limits context, and capability metrics.
+- The audit JSON includes a versioned schema, input columns, observation counts, initial/revised limits, and the selected exclusion mode.
 - Includes a reproducible sample dataset based on the project’s reference SPC exercise.
 
 ## Methodology
@@ -93,6 +94,7 @@ The sample interface initially shows subgroup 18 as a manually excluded subgroup
 5. Review the initial and revised X̄-R charts.
 6. Inspect capability indices and the numerical results.
 7. Export the analysis workbook when a record of the calculation is required.
+8. Export the JSON audit summary when a machine-readable record is needed for review, issue reports, or reproducibility.
 
 The revised chart uses shading and an orange outline to distinguish subgroups excluded from limit estimation while keeping them visible.
 
@@ -106,11 +108,12 @@ The revised chart uses shading and an orange outline to distinguish subgroups ex
 | requirements.txt | Runtime dependencies |
 | DEPLOYMENT.md | Posit Connect Cloud deployment notes |
 | CITATION.cff | Citation metadata for scholarly or technical reuse |
+| AUDIT_SCHEMA.md | Versioned JSON audit-export contract |
 | LICENSE | MIT license |
 
 ## Testing
 
-The repository includes regression tests for sample-data normalization, manual exclusion traceability, capability calculations, and specification-limit validation. Run them locally with:
+The repository includes regression tests for sample-data normalization, exclusion traceability, capability calculations, specification-limit validation, zero-variation handling, and audit serialization. Run them locally with:
 
 ~~~bash
 pip install -r requirements.txt pytest

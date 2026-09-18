@@ -57,6 +57,43 @@ def test_invalid_specification_order_is_rejected() -> None:
         )
 
 
+def test_non_finite_specification_is_rejected() -> None:
+    normalized, measurement_columns = normalize_data(sample_frame())
+
+    with pytest.raises(ValueError, match="valores finitos"):
+        perform_analysis(
+            normalized,
+            measurement_columns,
+            exclusion_mode="manual",
+            manual_excluded="",
+            lsl=float("nan"),
+            target=450.0,
+            usl=480.0,
+        )
+
+
+def test_zero_variability_is_rejected_before_capability_calculation() -> None:
+    frame = pd.DataFrame(
+        {
+            "Subgrupo": [1, 2, 3],
+            "x1": [450.0, 450.0, 450.0],
+            "x2": [450.0, 450.0, 450.0],
+        }
+    )
+    normalized, measurement_columns = normalize_data(frame)
+
+    with pytest.raises(ValueError, match="variabilidad positiva"):
+        perform_analysis(
+            normalized,
+            measurement_columns,
+            exclusion_mode="manual",
+            manual_excluded="",
+            lsl=420.0,
+            target=450.0,
+            usl=480.0,
+        )
+
+
 def test_audit_summary_is_json_safe_and_preserves_traceability() -> None:
     normalized, measurement_columns = normalize_data(sample_frame())
     analysis = perform_analysis(
@@ -77,6 +114,11 @@ def test_audit_summary_is_json_safe_and_preserves_traceability() -> None:
     assert summary["subgroups_used_for_revised_limits"] == 19
     assert summary["excluded_subgroups"] == [18]
     assert summary["specifications"] == {"lsl": 420.0, "target": 450.0, "usl": 480.0}
+    assert summary["schema_version"] == 1
+    assert summary["exclusion_mode"] == "manual"
+    assert summary["measurement_columns"] == ["x1", "x2", "x3", "x4"]
+    assert summary["observations_used"] == 76
+    assert set(summary["limits"]["revised"]) >= {"Xbar_LCL", "Xbar_CL", "Xbar_UCL"}
 
 
 def test_side_run_signals_identifies_the_complete_run() -> None:
