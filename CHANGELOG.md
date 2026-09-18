@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 — 2026-09-18
+
+- Rejected fractional, non-finite, partially missing, and ambiguous subgroup or measurement inputs before statistical calculation.
+- Added explicit validation for the selected exclusion mode.
+- Added Ruff linting and a Python 3.10–3.12 CI matrix.
+
 ## 0.3.0 — 2026-09-18
 
 - Versioned the JSON audit summary with application metadata, measurement columns, observation counts, exclusion mode, and initial/revised control limits.

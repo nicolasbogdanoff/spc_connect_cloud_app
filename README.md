@@ -106,6 +106,8 @@ The revised chart uses shading and an orange outline to distinguish subgroups ex
 | sample_data.csv | Included subgrouped example data |
 | styles.css | Application styling |
 | requirements.txt | Runtime dependencies |
+| requirements-dev.txt | Test and lint dependencies |
+| pyproject.toml | Pytest and Ruff configuration |
 | DEPLOYMENT.md | Posit Connect Cloud deployment notes |
 | CITATION.cff | Citation metadata for scholarly or technical reuse |
 | AUDIT_SCHEMA.md | Versioned JSON audit-export contract |
@@ -113,10 +115,11 @@ The revised chart uses shading and an orange outline to distinguish subgroups ex
 
 ## Testing
 
-The repository includes regression tests for sample-data normalization, exclusion traceability, capability calculations, specification-limit validation, zero-variation handling, and audit serialization. Run them locally with:
+The repository includes regression tests for input normalization, exclusion traceability, capability calculations, specification-limit validation, zero-variation handling, and audit serialization. The CI workflow also runs Ruff on the application and tests. Run the full local check with:
 
 ~~~bash
-pip install -r requirements.txt pytest
+pip install -r requirements-dev.txt
+python -m ruff check app.py tests
 pytest -q
 ~~~
 

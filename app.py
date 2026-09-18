@@ -12,7 +12,6 @@ from scipy.stats import norm
 from shiny import App, Inputs, Outputs, Session, reactive, render, req, ui
 from shiny.types import FileInfo
 
-
 APP_DIR = Path(__file__).parent
 SAMPLE_FILE = APP_DIR / "sample_data.csv"
 
@@ -64,8 +63,10 @@ def normalize_data(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
     # Convertir el identificador a entero cuando sea posible.
     subgroup_numeric = pd.to_numeric(df["Subgrupo"], errors="coerce")
-    if subgroup_numeric.isna().any():
-        raise ValueError("La columna Subgrupo debe contener identificadores numéricos.")
+    if subgroup_numeric.isna().any() or not np.isfinite(subgroup_numeric).all():
+        raise ValueError("La columna Subgrupo debe contener identificadores numéricos finitos.")
+    if (subgroup_numeric % 1 != 0).any():
+        raise ValueError("La columna Subgrupo debe contener identificadores enteros.")
     df["Subgrupo"] = subgroup_numeric.astype(int)
 
     if df["Subgrupo"].duplicated().any():
@@ -77,8 +78,14 @@ def normalize_data(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
             continue
         converted = pd.to_numeric(df[col], errors="coerce")
         if converted.notna().all():
+            if not np.isfinite(converted.astype(float)).all():
+                raise ValueError(f"La columna {col} contiene valores no finitos.")
             df[col] = converted.astype(float)
             measurement_cols.append(col)
+        elif converted.notna().any():
+            raise ValueError(
+                f"La columna {col} contiene valores faltantes o no numéricos."
+            )
 
     n = len(measurement_cols)
     if n < 2 or n > 10:
@@ -189,6 +196,9 @@ def perform_analysis(
     target: float,
     usl: float,
 ) -> dict[str, Any]:
+    if exclusion_mode not in {"manual", "auto"}:
+        raise ValueError("El modo de exclusión debe ser 'manual' o 'auto'.")
+
     specifications = np.asarray([lsl, target, usl], dtype=float)
     if not np.isfinite(specifications).all():
         raise ValueError("LSL, objetivo y USL deben ser valores finitos.")

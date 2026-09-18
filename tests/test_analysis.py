@@ -1,12 +1,10 @@
+import json
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-import json
-
 from app import build_audit_summary, normalize_data, perform_analysis, side_run_signals
-
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,6 +19,33 @@ def test_sample_data_normalizes_to_four_measurements() -> None:
     assert measurement_columns == ["x1", "x2", "x3", "x4"]
     assert normalized.shape == (20, 5)
     assert normalized["Subgrupo"].is_unique
+
+
+def test_normalization_rejects_fractional_subgroup_identifiers() -> None:
+    frame = pd.DataFrame(
+        {
+            "Subgrupo": [1.5, 2.0],
+            "x1": [450.0, 451.0],
+            "x2": [449.0, 452.0],
+        }
+    )
+
+    with pytest.raises(ValueError, match="identificadores enteros"):
+        normalize_data(frame)
+
+
+def test_normalization_rejects_partially_missing_measurement_columns() -> None:
+    frame = pd.DataFrame(
+        {
+            "Subgrupo": [1, 2],
+            "x1": [450.0, None],
+            "x2": [449.0, 452.0],
+            "x3": [451.0, 450.0],
+        }
+    )
+
+    with pytest.raises(ValueError, match="valores faltantes"):
+        normalize_data(frame)
 
 
 def test_manual_exclusion_is_traceable_in_revised_analysis() -> None:
@@ -54,6 +79,21 @@ def test_invalid_specification_order_is_rejected() -> None:
             lsl=480.0,
             target=450.0,
             usl=420.0,
+        )
+
+
+def test_invalid_exclusion_mode_is_rejected() -> None:
+    normalized, measurement_columns = normalize_data(sample_frame())
+
+    with pytest.raises(ValueError, match="modo de exclusión"):
+        perform_analysis(
+            normalized,
+            measurement_columns,
+            exclusion_mode="unknown",
+            manual_excluded="",
+            lsl=420.0,
+            target=450.0,
+            usl=480.0,
         )
 
 
